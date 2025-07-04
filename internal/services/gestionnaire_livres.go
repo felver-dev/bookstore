@@ -129,3 +129,14 @@ func (gl *GestionnaireLivres) TrouverLivreParID(id int) (*models.Livre, int) {
 	}
 	return nil, -1
 }
+
+func (gl *GestionnaireLivres) TrouverLivreParISBN(isbn string) (*models.Livre, int) {
+	isbnNettoye := strings.ReplaceAll(strings.ReplaceAll(isbn, "-", ""), " ", "")
+
+	for i, livre := range gl.livres {
+		if strings.EqualFold(livre.ISBN, isbnNettoye) {
+			return &gl.livres[i], i
+		}
+	}
+	return nil, -1
+}
