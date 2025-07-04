@@ -140,3 +140,59 @@ func (gl *GestionnaireLivres) TrouverLivreParISBN(isbn string) (*models.Livre, i
 	}
 	return nil, -1
 }
+
+func (gl *GestionnaireLivres) ModifierLivre(id int, nouveauTitre, nouvelAuteur, nouvelISBN, nouveauGenre, nouvelleDateStr string) error {
+	livre, index := gl.TrouverLivreParID(id)
+
+	if livre == nil {
+		return fmt.Errorf("aucun livre trouvé avec l'ID %d", id)
+	}
+
+	if nouveauTitre != "" {
+		if !validators.ValiderTitre(nouveauTitre) {
+			return fmt.Errorf("le nouveau titre est invalide")
+		}
+		livre.Titre = strings.TrimSpace(nouveauTitre)
+	}
+
+	if nouvelAuteur != "" {
+		if !validators.ValiderNom(nouvelAuteur) {
+			return fmt.Errorf("le nouveau nom d'auteur est invalide")
+		}
+		livre.Auteur = strings.TrimSpace(nouvelAuteur)
+	}
+
+	if nouvelISBN != "" {
+		if !validators.ValiderISBN(nouvelISBN) {
+			return fmt.Errorf("le nouvel ISBN est invalide")
+		}
+
+		// Vérifier l'unicité du nouvel ISBN
+		isbnNettoye := strings.ReplaceAll(strings.ReplaceAll(nouvelISBN, "-", ""), " ", "")
+		for _, l := range gl.livres {
+			if l.ID != livre.ID && strings.EqualFold(l.ISBN, isbnNettoye) {
+				return fmt.Errorf("l'ISBN %s est déjà utilisé par le livre ID %d", nouvelISBN, l.ID)
+			}
+		}
+		livre.ISBN = isbnNettoye
+	}
+
+	if nouveauGenre != "" {
+		if !validators.ValiderGenre(nouveauGenre) {
+			return fmt.Errorf("le nouveau genre '%s' n'est pas reconnu", nouveauGenre)
+		}
+		livre.Genre = nouveauGenre
+	}
+
+	if nouvelleDateStr != "" {
+		nouvelleDate, err := validators.ValiderDatePublication(nouvelleDateStr)
+		if err != nil {
+			return fmt.Errorf("nouvelle date de publication invalide : %v", err)
+		}
+		livre.DatePublication = nouvelleDate
+	}
+
+	gl.livres[index] = *livre
+	return gl.sauvegarderLivres()
+
+}
