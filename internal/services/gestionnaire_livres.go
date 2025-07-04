@@ -119,3 +119,13 @@ func (gl *GestionnaireLivres) RechercherLivres(terme string) []models.Livre {
 
 	return resultats
 }
+
+func (gl *GestionnaireLivres) TrouverLivreParID(id int) (*models.Livre, int) {
+
+	for i, livre := range gl.livres {
+		if livre.ID == id {
+			return &gl.livres[i], i
+		}
+	}
+	return nil, -1
+}
