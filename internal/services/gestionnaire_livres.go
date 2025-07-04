@@ -26,6 +26,10 @@ func (gl *GestionnaireLivres) ChargerLivres() error {
 	return nil
 }
 
+func (gl *GestionnaireLivres) sauvegarderLivres() error {
+	return gl.stockage.Sauvegarder(gl.livres)
+}
+
 func NouveauGestionnaireLivres(stockage storage.Storage) *GestionnaireLivres {
 	gl := &GestionnaireLivres{
 		livres:     make([]models.Livre, 0),
@@ -34,4 +38,5 @@ func NouveauGestionnaireLivres(stockage storage.Storage) *GestionnaireLivres {
 	}
 
 	gl.ChargerLivres()
+	return gl
 }
