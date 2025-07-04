@@ -196,3 +196,95 @@ func (gl *GestionnaireLivres) ModifierLivre(id int, nouveauTitre, nouvelAuteur, 
 	return gl.sauvegarderLivres()
 
 }
+
+func (gl *GestionnaireLivres) SupprimerLivre(id int) error {
+	livre, index := gl.TrouverLivreParID(id)
+	if livre == nil {
+		return fmt.Errorf("aucun livre trouvé avec l'ID %d", id)
+	}
+
+	// RÈGLE MÉTIER : On ne peut pas supprimer un livre actuellement emprunté
+	if !livre.EstDisponible() {
+		return fmt.Errorf("impossible de supprimer le livre '%s' car il est actuellement emprunté", livre.Titre)
+	}
+
+	// Supprimer le livre de la liste
+	gl.livres = append(gl.livres[:index], gl.livres[index+1:]...)
+
+	return gl.sauvegarderLivres()
+}
+
+func (gl *GestionnaireLivres) MarquerCommeEmprunte(id int) error {
+	livre, index := gl.TrouverLivreParID(id)
+	if livre == nil {
+		return fmt.Errorf("livre ID %d introuvable", id)
+	}
+
+	if !livre.EstDisponible() {
+		return fmt.Errorf("le livre '%s' est déjà emprunté", livre.Titre)
+	}
+
+	livre.MarquerCommeEmprunte()
+	gl.livres[index] = *livre
+
+	return gl.sauvegarderLivres()
+}
+
+// MarquerCommeDisponible marque un livre comme disponible
+func (gl *GestionnaireLivres) MarquerCommeDisponible(id int) error {
+	livre, index := gl.TrouverLivreParID(id)
+	if livre == nil {
+		return fmt.Errorf("livre ID %d introuvable", id)
+	}
+
+	livre.MarquerCommeDispponible()
+	gl.livres[index] = *livre
+
+	return gl.sauvegarderLivres()
+}
+
+func (gl *GestionnaireLivres) ObtenirStatistiques() map[string]interface{} {
+	stats := make(map[string]interface{})
+
+	total := len(gl.livres)
+	stats["total"] = total
+
+	if total == 0 {
+		return stats
+	}
+
+	// Compter les livres disponibles et empruntés
+	disponibles := 0
+	empruntes := 0
+	for _, livre := range gl.livres {
+		if livre.EstDisponible() {
+			disponibles++
+		} else {
+			empruntes++
+		}
+	}
+	stats["disponibles"] = disponibles
+	stats["empruntes"] = empruntes
+
+	// Compter par genre
+	genresCount := make(map[string]int)
+	for _, livre := range gl.livres {
+		genresCount[livre.Genre]++
+	}
+	stats["par_genre"] = genresCount
+
+	// Livre le plus emprunté
+	var plusEmprunte models.Livre
+	maxEmprunts := -1
+	for _, livre := range gl.livres {
+		if livre.NombreEmprunts > maxEmprunts {
+			maxEmprunts = livre.NombreEmprunts
+			plusEmprunte = livre
+		}
+	}
+	if maxEmprunts > 0 {
+		stats["plus_emprunte"] = plusEmprunte
+	}
+
+	return stats
+}
