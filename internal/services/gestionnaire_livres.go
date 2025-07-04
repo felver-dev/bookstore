@@ -92,5 +92,16 @@ func (gl *GestionnaireLivres) AjouterLivre(titre, auteur, isbn, genre, datePubli
 	gl.livres = append(gl.livres, nouveauLivre)
 	gl.prochainID++
 	return gl.sauvegarderLivres()
+}
 
+func (gl *GestionnaireLivres) ListerLivres() []models.Livre {
+	var disponibles []models.Livre
+
+	for _, livre := range gl.livres {
+		if livre.EstDisponible() {
+			disponibles = append(disponibles, livre)
+		}
+	}
+
+	return disponibles
 }
