@@ -105,3 +105,17 @@ func (gl *GestionnaireLivres) ListerLivres() []models.Livre {
 
 	return disponibles
 }
+
+func (gl *GestionnaireLivres) RechercherLivres(terme string) []models.Livre {
+	var resultats []models.Livre
+	terme = strings.TrimSpace(terme)
+
+	for _, livre := range gl.livres {
+		if strings.Contains(strings.ToLower(livre.Titre), terme) || strings.Contains(strings.ToLower(livre.Auteur), terme) || strings.Contains(strings.ToLower(livre.Genre), terme) {
+
+			resultats = append(resultats, livre)
+		}
+	}
+
+	return resultats
+}
