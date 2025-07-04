@@ -1,8 +1,13 @@
 package services
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/felver-dev/bookstore/internal/models"
 	"github.com/felver-dev/bookstore/internal/storage"
+	"github.com/felver-dev/bookstore/internal/validators"
 )
 
 type GestionnaireLivres struct {
@@ -39,4 +44,53 @@ func NouveauGestionnaireLivres(stockage storage.Storage) *GestionnaireLivres {
 
 	gl.ChargerLivres()
 	return gl
+}
+
+// Methodes publiques
+
+func (gl *GestionnaireLivres) AjouterLivre(titre, auteur, isbn, genre, datePublicationStr string) error {
+	if !validators.ValiderTitre(titre) {
+		return fmt.Errorf("le titre du livre est invalide")
+	}
+
+	if !validators.ValiderNom(auteur) {
+		return fmt.Errorf("le nom de l'auteur est invalide")
+	}
+
+	if !validators.ValiderISBN(isbn) {
+		return fmt.Errorf("l'ISBN est invalide (doit faire 10 ou 13 caractères)")
+	}
+
+	if !validators.ValiderGenre(genre) {
+		return fmt.Errorf("le genre '%s' n'est pas reconnu", genre)
+	}
+
+	datePublication, err := validators.ValiderDatePublication(datePublicationStr)
+	if err != nil {
+		return fmt.Errorf("date de publication invalide : %v", err)
+	}
+
+	for _, livre := range gl.livres {
+		if strings.EqualFold(livre.ISBN, isbn) {
+			return fmt.Errorf("un livre avec l'ISBN %s existe déjà (ID : %d - %s)", isbn, livre.ID, livre.Titre)
+		}
+	}
+
+	maintenant := time.Now()
+	nouveauLivre := models.Livre{
+		ID:              gl.prochainID,
+		Titre:           strings.TrimSpace(titre),
+		Auteur:          strings.TrimSpace(auteur),
+		ISBN:            strings.ReplaceAll(strings.ReplaceAll(isbn, "-", ""), " ", ""),
+		Genre:           genre,
+		DatePublication: datePublication,
+		Disponible:      true,
+		NombreEmprunts:  0,
+		DateAjout:       maintenant,
+	}
+
+	gl.livres = append(gl.livres, nouveauLivre)
+	gl.prochainID++
+	return gl.sauvegarderLivres()
+
 }
